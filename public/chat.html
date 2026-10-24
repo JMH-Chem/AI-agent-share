@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>수업용 AI</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/chat.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <button class="menu-btn" id="menu-btn" aria-label="대화 목록">☰</button>
+      <span class="title" id="class-name">수업용 AI</span>
+      <span class="spacer"></span>
+      <span class="small muted" id="usage-text"></span>
+      <div class="usage-meter" title="오늘 사용량"><div id="usage-bar"></div></div>
+      <a href="/admin" id="admin-link" class="small hidden">교수자 화면</a>
+      <button id="account-btn" class="small"></button>
+    </header>
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <select id="provider-select" aria-label="AI 종류"></select>
+        <button class="primary" id="new-btn">+ 새 대화</button>
+        <nav class="conv-list" id="conv-list"></nav>
+        <div class="files-panel hidden" id="files-panel">
+          <strong>작업 폴더 파일</strong>
+          <ul id="files-list"></ul>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="messages" id="messages">
+          <div class="messages-inner" id="messages-inner"></div>
+        </div>
+        <form class="composer" id="composer">
+          <div class="composer-inner">
+            <textarea id="input" rows="2" placeholder="질문을 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"></textarea>
+            <button class="primary" id="send-btn" type="submit">보내기</button>
+            <button class="hidden" id="stop-btn" type="button">중단</button>
+          </div>
+          <p class="small muted composer-note">답변하는 상대는 사람이 아닌 AI입니다. 틀릴 수 있으니 확인하세요. 질문과 답변은 수업 운영을 위해 교수자가 열람합니다.</p>
+        </form>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

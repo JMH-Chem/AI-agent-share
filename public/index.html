@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>수업용 AI 로그인</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/login.js"></script>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1 id="class-name">수업용 AI</h1>
+      <p class="muted small">교수자가 제공하는 수업 전용 AI입니다. 학번과 비밀번호로 로그인하세요.</p>
+
+      <div class="tabs hidden" id="tabs">
+        <button type="button" class="active" data-tab="login">로그인</button>
+        <button type="button" data-tab="signup">처음 가입</button>
+      </div>
+
+      <form id="login-form">
+        <label>아이디(학번)<input name="username" autocomplete="username" required></label>
+        <label>비밀번호<input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="primary" type="submit">로그인</button>
+      </form>
+
+      <form id="signup-form" class="hidden">
+        <label>수업 참여 코드<input name="joinCode" required></label>
+        <label>학번<input name="username" autocomplete="username" required></label>
+        <label>이름<input name="displayName" autocomplete="name" required></label>
+        <label>비밀번호 (8자 이상)<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="primary" type="submit">가입하고 시작</button>
+      </form>
+
+      <p id="message" class="error-text small" role="alert"></p>
+    </div>
+  </div>
+</body>
+</html>

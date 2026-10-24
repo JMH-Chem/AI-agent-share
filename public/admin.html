@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교수자 화면</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/admin.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <span class="title" id="class-name">수업용 AI</span>
+    <span class="muted small">교수자 화면</span>
+    <span class="spacer"></span>
+    <a href="/chat" class="small">직접 써보기</a>
+    <button id="logout-btn" class="small">로그아웃</button>
+  </header>
+
+  <main class="admin-main">
+    <section class="cards" id="cards"></section>
+
+    <nav class="admin-tabs" id="tabs">
+      <button class="active" data-tab="students">학생 현황</button>
+      <button data-tab="search">기록 검색</button>
+      <button data-tab="accounts">계정 만들기</button>
+      <button data-tab="audit">접속·감사 기록</button>
+    </nav>
+
+    <section id="tab-students" class="split">
+      <div class="panel">
+        <h2>학생 목록</h2>
+        <table class="data">
+          <thead><tr><th>학번</th><th>이름</th><th>질문</th><th>비용</th><th>최근</th></tr></thead>
+          <tbody id="students-body"></tbody>
+        </table>
+        <p class="row"><a class="small" href="/api/admin/export.csv">전체 기록 CSV 내려받기</a></p>
+      </div>
+      <div class="panel" id="detail">
+        <p class="muted">왼쪽에서 학생을 고르면 대화 기록을 볼 수 있습니다.</p>
+      </div>
+    </section>
+
+    <section id="tab-search" class="panel hidden">
+      <h2>질문·답변 내용 검색</h2>
+      <form id="search-form" class="row">
+        <input name="q" placeholder="찾을 단어 (예: 과제 2, 시험, 코드 전체)">
+        <button class="primary">검색</button>
+      </form>
+      <table class="data">
+        <thead><tr><th>시각</th><th>학생</th><th>구분</th><th>내용</th></tr></thead>
+        <tbody id="search-body"></tbody>
+      </table>
+    </section>
+
+    <section id="tab-accounts" class="panel hidden">
+      <h2>학생 계정 한꺼번에 만들기</h2>
+      <p class="small muted">한 줄에 한 명씩 <code>학번,이름</code> 형식으로 붙여넣으세요. 초기 비밀번호가 생성되며, 이 화면을 벗어나면 다시 볼 수 없으니 CSV로 저장해 학생들에게 나눠주세요.</p>
+      <textarea id="bulk-input" rows="8" placeholder="20261234,홍길동&#10;20261235,김철수"></textarea>
+      <p class="row"><button class="primary" id="bulk-btn">계정 만들기</button></p>
+      <div id="bulk-result"></div>
+      <h2>계정 관리</h2>
+      <table class="data">
+        <thead><tr><th>학번</th><th>이름</th><th>권한</th><th>동의</th><th>상태</th><th></th></tr></thead>
+        <tbody id="accounts-body"></tbody>
+      </table>
+    </section>
+
+    <section id="tab-audit" class="panel hidden">
+      <h2>최근 접속·감사 기록</h2>
+      <table class="data">
+        <thead><tr><th>시각</th><th>사용자</th><th>종류</th><th>내용</th><th>IP</th></tr></thead>
+        <tbody id="audit-body"></tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
