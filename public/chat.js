@@ -12,6 +12,7 @@ async function init() {
   me.agentProviders = new Set(me.providers.filter((p) => p.kind === 'agent').map((p) => p.id));
   document.title = cfg.className;
   $('#class-name').textContent = cfg.className;
+  if (cfg.modelNotice) $('.composer-note').append(` ${cfg.modelNotice}`);
   $('#account-btn').textContent = `${me.user.displayName} ▾`;
   if (me.user.role === 'admin') $('#admin-link').classList.remove('hidden');
   renderUsage();

@@ -54,7 +54,7 @@ export function createApp() {
 
   // ---------- 공개 ----------
   api.get('/config', (_req, res) => {
-    res.json({ className: config.className, joinEnabled: Boolean(config.classJoinCode), consentText: CONSENT_TEXT });
+    res.json({ className: config.className, joinEnabled: Boolean(config.classJoinCode), consentText: CONSENT_TEXT, modelNotice: config.modelNotice });
   });
 
   // 로그인 화면에서 이미 로그인되어 있는지 확인하는 용도 (401 없이 응답)

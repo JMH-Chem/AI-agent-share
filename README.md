@@ -37,11 +37,61 @@ npm start                   # http://localhost:3000
 | Claude 채팅 (웹 검색 포함) | Anthropic Messages API + 서버측 `web_search` 도구 | `ANTHROPIC_API_KEY` |
 | Claude 에이전트 (파일 작업 · 웹 검색) | Claude Agent SDK (Claude Code 엔진). 학생·대화별 작업 폴더에서 Read/Write/Edit/Glob/Grep/WebSearch/WebFetch | `ANTHROPIC_API_KEY`, `AGENT_ENABLED=true` |
 | OpenAI 채팅 (웹 검색 포함) | OpenAI Responses API + `web_search` 도구 | `OPENAI_API_KEY`, `OPENAI_MODEL` |
+| 이름은 직접 지정 (예: DeepSeek, 로컬 모델) | OpenAI 호환 API — 중국 API(DeepSeek·Qwen·GLM·Kimi·MiniMax)나 Ollama·vLLM·llama.cpp 로컬 모델. 웹 검색(SearXNG/Tavily)과 에이전트 모드(파일 작업) 선택 | `COMPAT_1_*` ~ `COMPAT_5_*`, `SEARCH_PROVIDER` |
 
 - 기본 모델은 `claude-opus-5-5` 입니다. 비용을 줄이려면 `.env`에서 `ANTHROPIC_MODEL`/`AGENT_MODEL`을 `claude-sonnet-5-5`(약 절반) 또는 `claude-haiku-5-5`(약 1/40)로 바꾸세요.
 - 에이전트 모드는 같은 대화 안에서 이전 작업을 이어갑니다(세션 재개). 학생과 교수자 모두 화면에서 작업 폴더의 파일을 보고 내려받을 수 있습니다.
 - 에이전트의 **명령 실행(Bash)은 기본으로 꺼져 있습니다.** 켜면(`AGENT_ALLOW_BASH=true`) 학생이 서버에서 코드를 실행할 수 있게 되므로, 반드시 이 앱만 돌리는 전용 VM/컨테이너에서 운영하세요. 켜면 Claude Code의 샌드박스(리눅스는 bubblewrap 필요)가 강제되고, 샌드박스를 쓸 수 없으면 실행을 거부합니다.
 - 에이전트는 교수자 개인 Claude Code 설정·로그인을 읽지 않도록 학생별 전용 설정 폴더(`data/claude-config/<학생ID>`)를 쓰고, 구독 로그인으로 실행되려 하면 즉시 중단합니다.
+
+## Claude 이외 모델: 중국 API와 로컬 모델
+
+`.env`의 `COMPAT_n_*` 설정으로 최대 5개까지 동시에 붙일 수 있고, 학생은 화면에서 고릅니다. 예시는 `.env.example`에 있습니다.
+
+- 모델이 도구 호출(function calling)을 지원하면 **웹 검색**(`SEARCH_PROVIDER` 설정 시)과 **에이전트 모드**(`COMPAT_n_AGENT=true`, 학생 작업 폴더에서 파일 목록·읽기·쓰기·수정)가 됩니다. 에이전트의 코드 실행 기능은 없습니다.
+- 웹 페이지 읽기는 서버 내부망(로컬 모델 서버, 공유기 등) 주소를 열지 못하게 막혀 있습니다.
+- 생각(추론)하는 모델의 생각 과정은 학생 화면에 보이지 않고 답만 보입니다.
+
+### 중국 API (종량제)
+
+- **종량제 API 키만 쓰세요.** GLM Coding Plan, Kimi Code, MiniMax Token Plan, Alibaba Coding Plan 같은 **구독 플랜은 각 회사 약관이 자기 앱·웹사이트 백엔드에서 쓰는 것을 금지**합니다(계정 정지, 환불 없음).
+- 종량제는 싸서, 학생 40명·주 2회·15주 가벼운 채팅 기준 한 학기 약 $10~100 수준입니다(DeepSeek Flash, Qwen Flash, GLM-5.3-Flash 등. 2026-10 검색 기준, 콘솔에서 확인).
+- 학생 질문이 해외 서버로 가므로 **국외 이전 별도 동의**가 필요합니다. DeepSeek은 데이터가 중국에 저장되고 2025년 개인정보보호위원회 시정권고 이력이 있어(앱 대상), 학교가 민감하게 볼 수 있습니다. 싱가포르 서버를 쓰는 Qwen(국제판)·GLM(Z.ai)·Kimi가 무난합니다.
+
+### 로컬 모델 (직접 운영)
+
+약관 문제가 없고, **학생 질문이 밖으로 나가지 않아** 개인정보 부담이 가장 작습니다. 다만 2026년 GPU 가격이 높아 API보다 싸지는 않고, 품질은 Claude·GPT보다 낮습니다. 개념 설명과 학부 수준 코딩 도움은 27~35B급 모델로 대체로 충분하지만, 자연스러운 한국어 글쓰기·첨삭과 긴 에이전트 작업은 차이가 큽니다. 꼭 수업 전에 시험해 보세요.
+
+동시 5명 기준 추천 구성 (2026-10 조사, 가격·속도는 2차 자료라 확인 필요):
+
+| 구성 | 모델 | 장비 | 비용 |
+|---|---|---|---|
+| A. 수업 시간에만 클라우드 GPU 대여 (가장 먼저 시험해 볼 것) | Qwen3.8-27B 또는 더 빠른 Qwen3.6-35B-A3B | RunPod·Vast.ai의 RTX 5090 32GB | 시간당 약 $0.34~1.19, 학기당 약 $35~250 |
+| B. 연구실 상시 서버 | Qwen3.6-35B-A3B, Qwen3.8-27B (한국어 비교용 EXAONE 4.5도 시험) | RTX 5090 워크스테이션 (약 ₩1,000만~1,300만) 또는 중고 RTX 3090 2장 | 장비 구입비 |
+| C. 큰 모델·에이전트까지 | gpt-oss-120b + Qwen3.8-27B | RTX PRO 6000 96GB | GPU만 약 $9,000~16,000 |
+
+- 라이선스: Qwen·gpt-oss(Apache-2.0)는 문제없습니다. EXAONE 4.x는 비영리 연구·교육용으로 허용(유료 강좌는 회색지대), HyperCLOVA X SEED는 "Powered by HyperCLOVA X" 표기가 필요합니다(`MODEL_NOTICE`에 넣으면 학생 화면 하단에 표시).
+- 국산 모델이 한국어를 더 잘한다고 단정하기 어렵습니다. LG가 공개한 비교표에서도 Qwen3.5-27B가 EXAONE 4.5보다 한국어 점수가 높았습니다.
+
+설치 순서 (서버 한 대에 포털과 모델을 같이 두는 경우):
+
+1. **모델 서버** — 셋 중 하나
+   - 가장 쉬움, Ollama: 설치 후 모델을 받고 **`OLLAMA_NUM_PARALLEL=5`** 를 꼭 설정하세요(기본값 1이라 학생들이 줄을 섭니다). 에이전트 모드를 쓰면 `OLLAMA_CONTEXT_LENGTH`도 32768 이상으로 늘리세요. 주소는 `http://localhost:11434/v1`.
+   - 무난함, llama.cpp: `llama-server -m 모델.gguf -np 6 --jinja --api-key 비밀키` → `http://localhost:8080/v1` (SearXNG와 포트가 겹치면 바꾸세요).
+   - 동시 접속에 가장 좋음, vLLM(리눅스): `vllm serve <모델> --enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3 --api-key 비밀키` → `http://localhost:8000/v1`.
+   - 모델 서버는 인터넷에 직접 열지 말고, 포털만 밖에서 접속하게 하세요.
+2. **웹 검색(선택)** — SearXNG를 Docker로 띄우고 `settings.yml`의 `search.formats`에 `json`을 추가한 뒤, `.env`에 `SEARCH_PROVIDER=searxng`, `SEARXNG_URL=http://localhost:포트`. 검색어 자체는 외부 검색엔진으로 나갑니다(학생 신원은 나가지 않음).
+3. **포털 `.env`**
+   ```
+   COMPAT_1_NAME=로컬 모델
+   COMPAT_1_BASE_URL=http://localhost:11434/v1
+   COMPAT_1_API_KEY=ollama            # vLLM·llama.cpp 는 위에서 정한 비밀키
+   COMPAT_1_MODEL=받은 모델 이름        # ollama list 로 확인
+   COMPAT_1_AGENT=true
+   COMPAT_1_REASONING_EFFORT=low      # 생각 시간을 줄여 응답을 빠르게 (서버가 지원할 때)
+   ```
+   생각 모드를 아예 끄는 옵션은 서버마다 다릅니다. 예를 들어 vLLM의 Qwen은 `COMPAT_1_EXTRA_BODY={"chat_template_kwargs":{"enable_thinking":false}}`. 사용량 집계 때문에 오류가 나는 서버면 `COMPAT_1_STREAM_USAGE=false`.
+4. 어려운 과제용으로 Claude나 중국 API를 `COMPAT_2_*`에 함께 붙여 두면, 평소에는 로컬, 필요할 때만 API를 쓰는 혼합 운영이 됩니다.
 
 ## 구독 vs API: 왜 API 키인가
 
@@ -116,6 +166,8 @@ src/auth.js                scrypt 비밀번호, 세션 쿠키, CSRF 방어, 로�
 src/providers/anthropic.js Claude 채팅 + 웹 검색
 src/providers/claude-agent.js  Claude Agent SDK 에이전트 모드
 src/providers/openai.js    OpenAI 채팅 + 웹 검색
+src/providers/compat.js    OpenAI 호환 API(중국 API·로컬 모델) 채팅·에이전트
+src/tools/                 Claude 이외 모델용 웹 검색·페이지 읽기·파일 도구
 src/pricing.js             비용 추정 단가표
 scripts/                   교수자 계정 생성, 학생 명단 가져오기, 기록 파기
 public/                    학생 화면(chat), 교수자 화면(admin), 로그인

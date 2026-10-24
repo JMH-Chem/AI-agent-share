@@ -13,6 +13,7 @@ function loadDotEnv(file) {
     if (!m || line.trim().startsWith('#')) continue;
     let value = m[2];
     if (/^(['"]).*\1$/.test(value)) value = value.slice(1, -1);
+    else value = value.replace(/\s+#.*$/, ''); // 따옴표 없는 값 뒤의 "  # 설명" 은 주석
     if (process.env[m[1]] === undefined) process.env[m[1]] = value;
   }
 }
@@ -33,6 +34,8 @@ export const config = {
   sessionDays: num(env.SESSION_DAYS, 14),
 
   className: env.CLASS_NAME || '수업용 AI',
+  // 모델 라이선스가 요구하는 표기 등 학생 화면 하단에 보여줄 문구 (예: Powered by HyperCLOVA X)
+  modelNotice: env.MODEL_NOTICE || '',
   // 비어 있으면 학생 자가 가입을 막고, 교수자가 관리자 화면에서 계정을 만듭니다.
   classJoinCode: env.CLASS_JOIN_CODE || '',
   systemPrompt:
@@ -83,6 +86,16 @@ export const config = {
   mockProvider: bool(env.MOCK_PROVIDER, false),
 };
 
+function parseJson(value, name) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    console.warn(`${name} 가 올바른 JSON 이 아니어서 무시합니다.`);
+    return null;
+  }
+}
+
 function compatEntries() {
   const entries = [];
   for (let n = 1; n <= 5; n++) {
@@ -110,6 +123,10 @@ function compatEntries() {
       // 에이전트 모드(학생 작업 폴더에서 파일 작업)도 함께 제공할지
       agent: bool(get('AGENT'), false),
       maxSteps: num(get('MAX_STEPS'), 15),
+      // 생각(추론) 강도: low | medium | high. 로컬 모델은 low 가 빠릅니다. 비우면 보내지 않음
+      reasoningEffort: get('REASONING_EFFORT') || '',
+      // 서버별 추가 옵션(JSON). 예: {"chat_template_kwargs":{"enable_thinking":false}}
+      extraBody: parseJson(get('EXTRA_BODY'), `COMPAT_${n}_EXTRA_BODY`),
     });
   }
   return entries;

@@ -162,6 +162,8 @@ function makeProvider(entry, kind) {
               stream: true,
               ...(tools.length ? { tools } : {}),
               ...(entry.streamUsage ? { stream_options: { include_usage: true } } : {}),
+              ...(entry.reasoningEffort ? { reasoning_effort: entry.reasoningEffort } : {}),
+              ...(entry.extraBody || {}),
             },
             { signal },
           );

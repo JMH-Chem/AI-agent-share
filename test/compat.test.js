@@ -51,6 +51,8 @@ before(async () => {
     COMPAT_1_PRICE_OUTPUT: '2',
     COMPAT_1_PRICE_CACHED_INPUT: '0.1',
     COMPAT_1_AGENT: 'true',
+    COMPAT_1_REASONING_EFFORT: 'low',
+    COMPAT_1_EXTRA_BODY: '{"chat_template_kwargs":{"enable_thinking":false}}',
     SEARCH_PROVIDER: 'searxng',
     SEARXNG_URL: base,
   });
@@ -103,6 +105,8 @@ test('스트리밍 답변에서 맨 앞 생각 과정은 빼고, 사용량과 �
   assert.equal(req.json.model, 'fake-model');
   assert.deepEqual(req.json.messages.map((m) => m.role), ['system', 'user', 'assistant', 'user']);
   assert.deepEqual(req.json.stream_options, { include_usage: true });
+  assert.equal(req.json.reasoning_effort, 'low');
+  assert.deepEqual(req.json.chat_template_kwargs, { enable_thinking: false });
   // 검색이 설정되어 있으면 채팅에는 웹 도구만, 파일 도구는 없음
   assert.deepEqual(req.json.tools.map((t) => t.function.name), ['web_search', 'fetch_url']);
 });
