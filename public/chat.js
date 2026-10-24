@@ -2,12 +2,14 @@ import { api, el, renderMarkdown, renderSteps, renderSources, showModal, fmtTime
 
 const $ = (s) => document.querySelector(s);
 const state = { me: null, conversations: [], current: null, streaming: null, ready: null };
+const isAgent = (providerId) => state.me?.agentProviders?.has(providerId);
 
 init().catch((err) => alert(err.message));
 
 async function init() {
   const [me, cfg] = await Promise.all([api('/me'), api('/config')]);
   state.me = me;
+  me.agentProviders = new Set(me.providers.filter((p) => p.kind === 'agent').map((p) => p.id));
   document.title = cfg.className;
   $('#class-name').textContent = cfg.className;
   $('#account-btn').textContent = `${me.user.displayName} ▾`;
@@ -78,7 +80,7 @@ async function loadConversations() {
       el(
         'button',
         { class: `conv-item${state.current?.id === c.id ? ' active' : ''}`, title: c.title, onclick: () => openConversation(c.id) },
-        el('span', { class: 'badge' }, c.provider === 'claude-agent' ? '에이전트' : '채팅'),
+        el('span', { class: 'badge' }, isAgent(c.provider) ? '에이전트' : '채팅'),
         c.title,
       ),
     ),
@@ -108,7 +110,7 @@ async function openConversation(id) {
   await loadConversations();
   const inner = $('#messages-inner');
   inner.replaceChildren(...messages.map(renderMessage));
-  if (!messages.length) inner.append(el('div', { class: 'empty' }, el('p', {}, conversation.provider === 'claude-agent' ? '에이전트에게 작업을 맡겨 보세요. 예: "간단한 계산기 파이썬 파일을 만들어줘"' : '무엇이든 물어보세요.')));
+  if (!messages.length) inner.append(el('div', { class: 'empty' }, el('p', {}, isAgent(conversation.provider) ? '에이전트에게 작업을 맡겨 보세요. 예: "간단한 계산기 파이썬 파일을 만들어줘"' : '무엇이든 물어보세요.')));
   scrollDown();
   await refreshFiles();
 }
@@ -237,7 +239,7 @@ function scrollDown(onlyIfNear = false) {
 async function refreshFiles() {
   const panel = $('#files-panel');
   const conv = state.current;
-  if (!conv || conv.provider !== 'claude-agent') return panel.classList.add('hidden');
+  if (!conv || !isAgent(conv.provider)) return panel.classList.add('hidden');
   const files = await api(`/conversations/${conv.id}/files`);
   panel.classList.remove('hidden');
   const list = $('#files-list');

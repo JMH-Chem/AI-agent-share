@@ -2,6 +2,7 @@ import { api, el, renderMarkdown, renderSteps, renderSources, showModal, downloa
 
 const $ = (s) => document.querySelector(s);
 let overview = null;
+const isAgent = (providerId) => overview?.providers.some((p) => p.id === providerId && p.kind === 'agent');
 
 const AUDIT_LABELS = {
   login: '로그인',
@@ -97,7 +98,7 @@ async function showStudent(userId) {
                 'tr',
                 { class: 'click', onclick: () => showConversation(c.id) },
                 el('td', { class: 'wrap' }, c.title),
-                el('td', {}, c.provider === 'claude-agent' ? '에이전트' : '채팅'),
+                el('td', {}, isAgent(c.provider) ? '에이전트' : '채팅'),
                 el('td', {}, fmtNum(c.messages)),
                 el('td', {}, fmtUsd(c.cost)),
                 el('td', {}, fmtTime(c.updated_at)),
@@ -121,7 +122,7 @@ async function showConversation(convId) {
   });
   const exportBtn = el('button', { class: 'small', onclick: () => downloadText(`conversation-${conversation.id}.json`, JSON.stringify({ conversation, messages }, null, 2), 'application/json') }, 'JSON 저장');
   const parts = [el('h2', {}, `「${conversation.title}」 · ${conversation.provider} (${conversation.model || ''})`), el('p', { class: 'row' }, exportBtn)];
-  if (conversation.provider === 'claude-agent') parts.push(await filesBlock(conversation.id));
+  if (isAgent(conversation.provider)) parts.push(await filesBlock(conversation.id));
   box.replaceChildren(...parts, el('div', { class: 'transcript' }, items));
   box.scrollIntoView({ behavior: 'smooth' });
 }

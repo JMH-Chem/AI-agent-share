@@ -70,6 +70,15 @@ export const config = {
   },
   // OpenAI 호환 API (DeepSeek·Qwen 등 API 또는 Ollama·vLLM 로컬 모델). COMPAT_1_* ~ COMPAT_5_*
   compat: compatEntries(),
+  // Claude 이외 모델이 쓰는 웹 검색: searxng(직접 설치, 무료) 또는 tavily(API 키)
+  search: {
+    provider: (env.SEARCH_PROVIDER || '').toLowerCase(),
+    searxngUrl: env.SEARXNG_URL || '',
+    tavilyApiKey: env.TAVILY_API_KEY || '',
+    language: env.SEARCH_LANGUAGE || 'ko',
+    maxResults: num(env.SEARCH_MAX_RESULTS, 5),
+    fetchMaxChars: num(env.FETCH_MAX_CHARS, 20000),
+  },
   // 실제 AI 없이 화면과 로그 기능을 시험해 볼 수 있는 가짜 응답기.
   mockProvider: bool(env.MOCK_PROVIDER, false),
 };
@@ -96,6 +105,11 @@ function compatEntries() {
       price,
       // 사용량(토큰) 집계를 스트림 끝에 받기. 지원하지 않는 서버면 false 로.
       streamUsage: bool(get('STREAM_USAGE'), true),
+      // 도구 호출(웹 검색·파일 작업) 사용 여부. 도구를 지원하지 않는 모델이면 false 로.
+      tools: bool(get('TOOLS'), true),
+      // 에이전트 모드(학생 작업 폴더에서 파일 작업)도 함께 제공할지
+      agent: bool(get('AGENT'), false),
+      maxSteps: num(get('MAX_STEPS'), 15),
     });
   }
   return entries;
