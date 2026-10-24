@@ -68,9 +68,38 @@ export const config = {
     allowBash: bool(env.AGENT_ALLOW_BASH, false),
     workspaceRoot: path.resolve(ROOT, env.DATA_DIR || 'data', 'workspaces'),
   },
+  // OpenAI 호환 API (DeepSeek·Qwen 등 API 또는 Ollama·vLLM 로컬 모델). COMPAT_1_* ~ COMPAT_5_*
+  compat: compatEntries(),
   // 실제 AI 없이 화면과 로그 기능을 시험해 볼 수 있는 가짜 응답기.
   mockProvider: bool(env.MOCK_PROVIDER, false),
 };
+
+function compatEntries() {
+  const entries = [];
+  for (let n = 1; n <= 5; n++) {
+    const get = (k) => env[`COMPAT_${n}_${k}`];
+    if (!get('BASE_URL')) continue;
+    const price =
+      get('PRICE_INPUT') !== undefined || get('PRICE_OUTPUT') !== undefined
+        ? {
+            input: num(get('PRICE_INPUT'), 0),
+            output: num(get('PRICE_OUTPUT'), 0),
+            cachedInput: get('PRICE_CACHED_INPUT') === undefined ? undefined : num(get('PRICE_CACHED_INPUT'), 0),
+          }
+        : null;
+    entries.push({
+      id: `compat-${n}`,
+      label: get('NAME') || `호환 AI ${n}`,
+      baseUrl: get('BASE_URL'),
+      apiKey: get('API_KEY') || '',
+      model: get('MODEL') || '',
+      price,
+      // 사용량(토큰) 집계를 스트림 끝에 받기. 지원하지 않는 서버면 false 로.
+      streamUsage: bool(get('STREAM_USAGE'), true),
+    });
+  }
+  return entries;
+}
 
 export function ensureDirs() {
   fs.mkdirSync(config.dataDir, { recursive: true });
