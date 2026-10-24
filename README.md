@@ -48,7 +48,7 @@ npm start                   # http://localhost:3000
 
 `.env`의 `COMPAT_n_*` 설정으로 최대 5개까지 동시에 붙일 수 있고, 학생은 화면에서 고릅니다. 예시는 `.env.example`에 있습니다.
 
-- 모델이 도구 호출(function calling)을 지원하면 **웹 검색**(`SEARCH_PROVIDER` 설정 시)과 **에이전트 모드**(`COMPAT_n_AGENT=true`, 학생 작업 폴더에서 파일 목록·읽기·쓰기·수정)가 됩니다. 에이전트의 코드 실행 기능은 없습니다.
+- 모델이 도구 호출(function calling)을 지원하면 **웹 검색**(`SEARCH_PROVIDER` 설정 시)과 **에이전트 모드**(`COMPAT_n_AGENT=true`, 학생 작업 폴더에서 파일 목록·읽기·쓰기·수정)가 됩니다. `CODE_EXEC=docker`로 **코드 실행**도 켤 수 있습니다(아래 절).
 - 웹 페이지 읽기는 서버 내부망(로컬 모델 서버, 공유기 등) 주소를 열지 못하게 막혀 있습니다.
 - 생각(추론)하는 모델의 생각 과정은 학생 화면에 보이지 않고 답만 보입니다.
 
@@ -92,6 +92,47 @@ npm start                   # http://localhost:3000
    ```
    생각 모드를 아예 끄는 옵션은 서버마다 다릅니다. 예를 들어 vLLM의 Qwen은 `COMPAT_1_EXTRA_BODY={"chat_template_kwargs":{"enable_thinking":false}}`. 사용량 집계 때문에 오류가 나는 서버면 `COMPAT_1_STREAM_USAGE=false`.
 4. 어려운 과제용으로 Claude나 중국 API를 `COMPAT_2_*`에 함께 붙여 두면, 평소에는 로컬, 필요할 때만 API를 쓰는 혼합 운영이 됩니다.
+
+### 에이전트 코드 실행 (Docker 격리)
+
+`CODE_EXEC=docker`를 켜면 에이전트가 만든 코드를 실행해 결과를 보고, 오류가 나면 고쳐서 다시 실행합니다. 그래프 같은 결과 파일은 작업 폴더에 남아 학생·교수자 화면에서 바로 볼 수 있습니다.
+
+학생 코드를 교수자 PC에서 그대로 돌리면 위험하므로, 실행할 때마다 새 컨테이너를 만들어 그 안에서만 돌리고 바로 지웁니다.
+
+- 학생 작업 폴더만 보이고 PC의 다른 파일은 보이지 않음
+- 인터넷 차단(`CODE_EXEC_NETWORK=true`로 허용 가능), 시스템 파일 읽기 전용, 관리자 권한 없음
+- 1회 30초, 메모리 512MB, CPU 1개, 프로세스 128개 제한 (`CODE_EXEC_TIMEOUT_SEC` 등으로 조정)
+- 더 강한 격리가 필요하면 gVisor를 설치하고 `CODE_EXEC_DOCKER_RUNTIME=runsc`
+
+준비:
+
+1. Docker 설치 (Windows는 Docker Desktop)
+2. 실행용 이미지 만들기 — 파이썬과 numpy·pandas·matplotlib·scipy·sympy, 그래프 한글 글꼴(나눔고딕) 포함
+   ```
+   docker build -t class-ai-sandbox sandbox/
+   ```
+   다른 라이브러리가 필요하면 `sandbox/Dockerfile`의 `pip install` 줄에 추가하고 다시 만드세요(실행 중엔 인터넷이 막혀 학생 코드에서 설치할 수 없습니다).
+3. `.env`
+   ```
+   CODE_EXEC=docker
+   CODE_EXEC_IMAGE=class-ai-sandbox
+   ```
+
+포털을 시작할 때 Docker와 이미지가 준비됐는지 확인해서 알려 줍니다. Claude 에이전트 모드의 명령 실행은 이와 별개로 `AGENT_ALLOW_BASH`를 씁니다.
+
+### RTX 5070 Ti PC 한 대로 운영하기
+
+가지고 계신 PC 한 대에 모델 서버·포털·코드 실행을 모두 올리는 구성이 추가 비용 없이 가장 간단합니다.
+
+- **모델 고르기 (그래픽 메모리 16GB 기준, 직접 비교해 보세요)**
+  - `gpt-oss-20b`: 16GB에 통째로 들어가고 도구 호출을 기본 지원해 에이전트에 유리. Apache-2.0. 한국어 품질은 시험 필요.
+  - Qwen3.5-9B나 Gemma 4 12B 같은 10B 안팎 모델: 메모리 여유가 커서 5명 동시 처리에 넉넉하지만 품질은 한 단계 낮음.
+  - Qwen3.6-35B-A3B: 4비트도 약 21GB라 16GB에 다 안 들어갑니다. 본체 메모리가 32GB 이상이면 llama.cpp로 일부를 본체 메모리에 두고 돌릴 수 있지만 느려집니다.
+  - 27B급 일반 모델(Qwen3.8-27B 등)은 16GB에서 빠듯해 동시 5명엔 권하지 않습니다.
+  - 동시 사용자마다 대화 기억용 메모리가 따로 들기 때문에, 에이전트처럼 긴 대화를 5명이 동시에 하면 모델이 작을수록 안정적입니다.
+- **학생 접속**: 학생들이 같은 교내망이면 PC 주소로 바로 접속할 수 있습니다. 밖에서도 접속하게 하려면 공유기 포트를 열기보다 Cloudflare Tunnel 같은 터널로 포털만 HTTPS로 내보내세요. 모델 서버(Ollama 등)는 인증이 없으니 절대 밖에 열지 마세요.
+- **포털을 다른 서버에 두는 경우**: 포털에서 PC의 모델 서버로 Tailscale 같은 사설망으로 연결하고, `COMPAT_1_BASE_URL`에 그 주소를 넣으세요.
+- 수업 중 PC가 절전 모드로 들어가지 않게 설정하세요.
 
 ## 구독 vs API: 왜 API 키인가
 
@@ -167,7 +208,8 @@ src/providers/anthropic.js Claude 채팅 + 웹 검색
 src/providers/claude-agent.js  Claude Agent SDK 에이전트 모드
 src/providers/openai.js    OpenAI 채팅 + 웹 검색
 src/providers/compat.js    OpenAI 호환 API(중국 API·로컬 모델) 채팅·에이전트
-src/tools/                 Claude 이외 모델용 웹 검색·페이지 읽기·파일 도구
+src/tools/                 Claude 이외 모델용 웹 검색·페이지 읽기·파일·코드 실행 도구
+sandbox/Dockerfile         코드 실행용 컨테이너 이미지
 src/pricing.js             비용 추정 단가표
 scripts/                   교수자 계정 생성, 학생 명단 가져오기, 기록 파기
 public/                    학생 화면(chat), 교수자 화면(admin), 로그인

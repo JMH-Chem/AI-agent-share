@@ -1,4 +1,4 @@
-import { api, el, renderMarkdown, renderSteps, renderSources, showModal, downloadText, fmtUsd, fmtNum, fmtTime } from './common.js';
+import { api, el, renderMarkdown, renderSteps, renderSources, showModal, downloadText, fmtUsd, fmtNum, fmtTime, previewWorkspaceFile } from './common.js';
 
 const $ = (s) => document.querySelector(s);
 let overview = null;
@@ -143,17 +143,7 @@ async function filesBlock(convId) {
           'li',
           {},
           `${f.path} (${fmtNum(f.size)}B) `,
-          el(
-            'button',
-            {
-              class: 'small',
-              onclick: async () => {
-                const res = await fetch(`${url}&preview=1`);
-                showModal(f.path, el('pre', {}, res.ok ? await res.text() : '미리보기를 할 수 없습니다.'));
-              },
-            },
-            '보기',
-          ),
+          el('button', { class: 'small', onclick: () => previewWorkspaceFile(url, f.path) }, '보기'),
           ' ',
           el('a', { href: url, class: 'small' }, '받기'),
         );

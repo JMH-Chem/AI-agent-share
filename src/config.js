@@ -82,6 +82,20 @@ export const config = {
     maxResults: num(env.SEARCH_MAX_RESULTS, 5),
     fetchMaxChars: num(env.FETCH_MAX_CHARS, 20000),
   },
+  // Claude 이외 모델의 에이전트가 코드를 실행하는 방식: docker(격리 컨테이너) 또는 off
+  codeExec: {
+    mode: (env.CODE_EXEC || 'off').toLowerCase(),
+    image: env.CODE_EXEC_IMAGE || 'python:3.12-slim',
+    timeoutSec: num(env.CODE_EXEC_TIMEOUT_SEC, 30),
+    memory: env.CODE_EXEC_MEMORY || '512m',
+    cpus: env.CODE_EXEC_CPUS || '1',
+    // 컨테이너 안에서 인터넷 사용 허용 여부 (기본 차단)
+    network: bool(env.CODE_EXEC_NETWORK, false),
+    // 더 강한 격리가 필요하면 gVisor 설치 후 runsc
+    runtime: env.CODE_EXEC_DOCKER_RUNTIME || '',
+    user: env.CODE_EXEC_USER || '',
+    dockerBin: env.DOCKER_BIN || 'docker',
+  },
   // 실제 AI 없이 화면과 로그 기능을 시험해 볼 수 있는 가짜 응답기.
   mockProvider: bool(env.MOCK_PROVIDER, false),
 };

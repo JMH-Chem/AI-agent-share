@@ -18,6 +18,7 @@ import {
 } from './auth.js';
 import { listProviders, getProvider, defaultProviderId } from './providers/index.js';
 import { workspaceDir, isInside } from './providers/claude-agent.js';
+import { codeExecEnabled, checkDocker } from './tools/exec.js';
 
 const CONSENT_TEXT =
   process.env.CONSENT_TEXT ||
@@ -512,12 +513,21 @@ function sendWorkspaceFile(req, res, conv) {
   res.set('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(path.basename(target))}`);
   if (req.query.preview === '1') {
     const st = fs.statSync(target);
-    if (st.size > 200_000) return res.status(413).json({ error: '미리보기는 200KB 이하 파일만 됩니다.' });
-    res.set('Content-Type', 'text/plain; charset=utf-8');
+    // 그림은 바로 보여 주되, 스크립트를 품을 수 있는 SVG 는 내려받기만 허용
+    const imageType = IMAGE_TYPES[path.extname(target).toLowerCase()];
+    if (imageType) {
+      if (st.size > 5_000_000) return res.status(413).json({ error: '미리보기는 5MB 이하 그림만 됩니다.' });
+      res.set('Content-Type', imageType);
+    } else {
+      if (st.size > 200_000) return res.status(413).json({ error: '미리보기는 200KB 이하 파일만 됩니다.' });
+      res.set('Content-Type', 'text/plain; charset=utf-8');
+    }
     res.set('Content-Disposition', 'inline');
   }
   fs.createReadStream(target).pipe(res);
 }
+
+const IMAGE_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
 
 function safeJson(s) {
   if (!s) return null;
@@ -560,6 +570,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   createApp().listen(config.port, config.host, () => {
     console.log(`${config.className} 포털: http://localhost:${config.port}`);
     for (const p of providers) console.log(`  - ${p.available ? '켜짐' : '꺼짐'}  ${p.label} (${p.model || '모델 미지정'})`);
+    if (codeExecEnabled()) {
+      checkDocker().then((warning) => console.log(warning ? `  ! ${warning}` : `  - 코드 실행: Docker 격리 실행 (${config.codeExec.image})`));
+    }
     if (!providers.some((p) => p.available)) {
       console.warn('사용 가능한 AI 가 없습니다. .env 에 ANTHROPIC_API_KEY 등을 설정하세요 (시험용: MOCK_PROVIDER=true).');
     }

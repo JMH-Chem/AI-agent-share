@@ -113,6 +113,7 @@ const TOOL_LABELS = {
   read_file: '파일 읽기',
   write_file: '파일 쓰기',
   edit_file: '파일 수정',
+  run_command: '코드 실행',
   Read: '파일 읽기',
   Write: '파일 쓰기',
   Edit: '파일 수정',
@@ -197,6 +198,16 @@ export function showModal(title, body, buttons = [{ label: '닫기' }]) {
     );
     document.body.append(backdrop);
   });
+}
+
+// 작업 폴더 파일 미리보기: 그림은 그대로, 나머지는 글자로
+export async function previewWorkspaceFile(url, name) {
+  if (/\.(png|jpe?g|gif|webp)$/i.test(name)) {
+    return showModal(name, el('img', { src: `${url}&preview=1`, alt: name, class: 'preview-img' }));
+  }
+  const res = await fetch(`${url}&preview=1`);
+  const text = res.ok ? await res.text() : (await res.json().catch(() => ({}))).error || '미리보기를 할 수 없습니다.';
+  return showModal(name, el('pre', {}, text));
 }
 
 export function downloadText(filename, text, type = 'text/csv;charset=utf-8') {

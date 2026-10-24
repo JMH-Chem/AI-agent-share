@@ -9,6 +9,7 @@ import { estimateCost } from '../pricing.js';
 import { workspaceDir } from './claude-agent.js';
 import { searchEnabled, webSearch, fetchPage } from '../tools/web.js';
 import { listFiles, readFile, writeFile, editFile } from '../tools/files.js';
+import { codeExecEnabled, runCommand } from '../tools/exec.js';
 
 // 일부 모델(Qwen3, DeepSeek-R1 계열 등)은 답 맨 앞에 <think>…</think> 로 생각 과정을 붙여 보냅니다.
 // 스트림 조각이 태그 중간에서 잘려도 맨 앞의 생각 부분만 빼고 답을 내보내는 필터입니다.
@@ -76,6 +77,14 @@ const FILE_TOOLS = [
   }),
 ];
 
+const EXEC_TOOLS = [
+  fn('run_command', '작업 폴더(/workspace)에서 셸 명령을 실행합니다. 예: python main.py. 인터넷은 막혀 있고 실행 시간이 제한됩니다. 출력과 종료 코드를 돌려줍니다.', {
+    command: { type: 'string', description: '실행할 셸 명령' },
+  }),
+];
+
+const EXEC_PROMPT = ' 코드를 만들면 run_command 로 실행해 결과를 확인하고, 오류가 나면 고쳐서 다시 실행하세요.';
+
 const AGENT_PROMPT =
   '\n\n지금은 에이전트 모드입니다. 학생 전용 작업 폴더에서 list_files, read_file, write_file, edit_file 도구로 파일을 만들고 고칠 수 있습니다. ' +
   '경로는 작업 폴더 기준 상대 경로로 쓰세요. 고치기 전에 먼저 읽고, 작업을 마치면 무엇을 만들고 바꿨는지 짧게 정리하세요.';
@@ -107,6 +116,8 @@ async function runTool(name, args, { root, signal, sources }) {
       return writeFile(root, args.path, args.content);
     case 'edit_file':
       return editFile(root, args.path, args.old_text, args.new_text);
+    case 'run_command':
+      return runCommand(root, String(args.command || ''), { signal });
     default:
       throw new Error(`없는 도구입니다: ${name}`);
   }
@@ -128,7 +139,7 @@ function makeProvider(entry, kind) {
 
   return {
     id: isAgent ? `${entry.id}-agent` : entry.id,
-    label: isAgent ? `${entry.label} 에이전트 (파일 작업)` : entry.label,
+    label: isAgent ? `${entry.label} 에이전트 (${codeExecEnabled() ? '파일 작업 · 코드 실행' : '파일 작업'})` : entry.label,
     kind,
     available: () => Boolean(entry.baseUrl && entry.model && (!isAgent || (entry.agent && entry.tools))),
     model: () => entry.model,
@@ -137,10 +148,14 @@ function makeProvider(entry, kind) {
       const root = isAgent ? workspaceDir(user.id, conversation.id) : null;
       if (root) fs.mkdirSync(root, { recursive: true });
       const web = entry.tools && searchEnabled();
-      let tools = [...(isAgent ? FILE_TOOLS : []), ...(web ? WEB_TOOLS : [])];
+      const exec = isAgent && codeExecEnabled();
+      let tools = [...(isAgent ? FILE_TOOLS : []), ...(exec ? EXEC_TOOLS : []), ...(web ? WEB_TOOLS : [])];
 
       const messages = [
-        { role: 'system', content: config.systemPrompt + (isAgent ? AGENT_PROMPT : '') + (web ? WEB_PROMPT : '') },
+        {
+          role: 'system',
+          content: config.systemPrompt + (isAgent ? AGENT_PROMPT : '') + (exec ? EXEC_PROMPT : '') + (web ? WEB_PROMPT : ''),
+        },
         ...history.map((m) => ({ role: m.role, content: m.content })),
         { role: 'user', content: userText },
       ];

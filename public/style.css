@@ -200,6 +200,7 @@ textarea { resize: vertical; }
   gap: 12px;
 }
 .modal h2 { margin: 0; font-size: 18px; }
+.preview-img { max-width: 100%; height: auto; background: #fff; border-radius: 8px; }
 .modal pre { white-space: pre-wrap; background: var(--code-bg); padding: 10px; border-radius: 8px; max-height: 60vh; overflow: auto; }
 .row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 

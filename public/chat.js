@@ -1,4 +1,4 @@
-import { api, el, renderMarkdown, renderSteps, renderSources, showModal, fmtTime, toolLabel, toolSummary } from './common.js';
+import { api, el, renderMarkdown, renderSteps, renderSources, showModal, fmtTime, toolLabel, toolSummary, previewWorkspaceFile } from './common.js';
 
 const $ = (s) => document.querySelector(s);
 const state = { me: null, conversations: [], current: null, streaming: null, ready: null };
@@ -252,17 +252,11 @@ async function refreshFiles() {
         'li',
         {},
         el('span', { title: f.path }, f.path),
-        el('button', { class: 'small', onclick: () => previewFile(base, f.path) }, '보기'),
+        el('button', { class: 'small', onclick: () => previewWorkspaceFile(base, f.path) }, '보기'),
         el('a', { href: base, class: 'small' }, '받기'),
       );
     }),
   );
-}
-
-async function previewFile(base, name) {
-  const res = await fetch(`${base}&preview=1`);
-  const text = res.ok ? await res.text() : (await res.json().catch(() => ({}))).error || '열 수 없습니다.';
-  showModal(name, el('pre', {}, text));
 }
 
 async function accountMenu() {

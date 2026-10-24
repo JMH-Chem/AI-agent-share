@@ -162,6 +162,16 @@ test('작업 폴더 밖 파일은 내려받을 수 없음', async () => {
 
   res = await s('GET', `/api/conversations/${conv.id}/file?path=${encodeURIComponent('../../../class-ai.db')}`);
   assert.equal(res.status, 404);
+
+  // 그림은 바로 보기, SVG 는 스크립트를 품을 수 있어 글자로만 보여 줌
+  fs.writeFileSync(path.join(dir, 'graph.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  fs.writeFileSync(path.join(dir, 'x.svg'), '<svg onload="alert(1)"></svg>');
+  res = await s('GET', `/api/conversations/${conv.id}/file?path=graph.png&preview=1`);
+  assert.equal(res.headers.get('content-type'), 'image/png');
+  res = await s('GET', `/api/conversations/${conv.id}/file?path=x.svg&preview=1`);
+  assert.match(res.headers.get('content-type'), /^text\/plain/);
+  res = await s('GET', `/api/conversations/${conv.id}/file?path=x.svg`);
+  assert.equal(res.headers.get('content-type'), 'application/octet-stream');
 });
 
 test('마크다운 변환기는 HTML 을 실행하지 않음', async () => {
